@@ -210,7 +210,7 @@ open class PullUpController: UIViewController {
         NSLayoutConstraint.activate([topConstraint, leftConstraint, widthConstraint, heightConstraint].compactMap { $0 })
     }
     
-    private func refreshConstraints(newSize: CGSize, resetTop: Bool = true) {
+    fileprivate func refreshConstraints(newSize: CGSize, resetTop: Bool = true) {
         if newSize.height > newSize.width {
             setPortraitConstraints(parentViewSize: newSize, resetTop: resetTop)
         } else {
@@ -375,24 +375,26 @@ extension UIViewController {
      Adds the specified pull up view controller as a child of the current view controller.
      - parameter pullUpController: the pull up controller to add as a child of the current view controller.
      */
-    open func addPullUpController(_ pullUpController: PullUpController, animated: Bool) {
+  open func addPullUpController(_ pullUpController: PullUpController, animated: Bool, completion: (() -> Void)? = nil) {
         assert(!(self is UITableViewController), "It's not possible to attach a PullUpController to a UITableViewController. Check this issue for more information: https://github.com/MarioIannotta/PullUpController/issues/14")
         addChildViewController(pullUpController)
         pullUpController.setupView(superview: view)
-        if animated {
-            UIView.animate(withDuration: 0.3) { [weak self] in
-                self?.view.layoutIfNeeded()
-            }
-        } else {
-            view.layoutIfNeeded()
+        pullUpController.pullUpControllerMoveToVisiblePoint(0, animated: false, completion: nil)
+        pullUpController.refreshConstraints(newSize: view.frame.size, resetTop: true)
+        UIView.animate(withDuration: animated ? 0.3 : 0.0, animations: {
+          self.view.setNeedsLayout()
+          self.view.layoutIfNeeded()
+        }) { _ in
+          completion?()
         }
     }
     
-    open func removePullUpController(_ pullUpController: PullUpController, animated: Bool) {
+    open func removePullUpController(_ pullUpController: PullUpController, animated: Bool, completion: (() -> Void)? = nil) {
         pullUpController.pullUpControllerMoveToVisiblePoint(0, animated: animated) {
             pullUpController.willMove(toParentViewController: nil)
             pullUpController.view.removeFromSuperview()
             pullUpController.removeFromParentViewController()
+            completion?()
         }
     }
     
